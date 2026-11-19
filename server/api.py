@@ -5,6 +5,7 @@ from flask import request, jsonify
 from server import app, auth, database, reloader
 from server.models import FlagStatus
 from server.spam import is_spam_flag
+from server.flag_utils import deduplicate_flags
 
 
 @app.route('/api/get_config')
@@ -20,12 +21,18 @@ def get_config():
 def post_flags():
     flags = request.get_json()
     flags = [item for item in flags if not is_spam_flag(item['flag'])]
+    flags, duplicates_removed = deduplicate_flags(flags, lambda item: item['flag'])
+
+    if duplicates_removed:
+        app.logger.debug('Ignored %s duplicate flags in one request', duplicates_removed)
 
     cur_time = round(time.time())
     rows = [(item['flag'], item['sploit'], item['team'], cur_time, FlagStatus.QUEUED.name)
             for item in flags]
 
     db = database.get()
+    # Keep INSERT OR IGNORE as the cross-request/concurrent-request safeguard:
+    # flags has a PRIMARY KEY, so an already stored flag cannot be queued again.
     db.executemany("INSERT OR IGNORE INTO flags (flag, sploit, team, time, status) "
                    "VALUES (?, ?, ?, ?, ?)", rows)
     db.commit()
