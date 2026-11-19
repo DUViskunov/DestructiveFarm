@@ -7,6 +7,7 @@ from collections import defaultdict
 
 from server import app, database, reloader
 from server.models import Flag, FlagStatus, SubmitResult
+from server.flag_utils import deduplicate_flags
 
 
 def get_fair_share(groups, limit):
@@ -76,18 +77,28 @@ def run_loop():
                 grouped_flags[item.sploit, item.team].append(item)
             flags = get_fair_share(grouped_flags.values(), config['SUBMIT_FLAG_LIMIT'])
 
-            app.logger.debug('Submitting %s flags (out of %s in queue)', len(flags), len(queued_flags))
-            results = submit_flags(flags, config)
+            # Final guard immediately before calling the checksystem protocol.
+            # The database primary key normally guarantees uniqueness; this
+            # protects the outbound batch if duplicate rows are ever introduced
+            # by a migration, test fixture, or alternate data source.
+            flags, duplicates_removed = deduplicate_flags(flags, lambda item: item.flag)
+            if duplicates_removed:
+                app.logger.warning('Removed %s duplicate flags before submission', duplicates_removed)
 
-            rows = [(item.status.name, item.checksystem_response, item.flag) for item in results]
-            db.executemany("UPDATE flags SET status = ?, checksystem_response = ? "
-                           "WHERE flag = ?", rows)
-            db.commit()
+            if flags:
+                app.logger.debug('Submitting %s flags (out of %s in queue)',
+                                 len(flags), len(queued_flags))
+                results = submit_flags(flags, config)
+
+                rows = [(item.status.name, item.checksystem_response, item.flag) for item in results]
+                db.executemany("UPDATE flags SET status = ?, checksystem_response = ? "
+                               "WHERE flag = ?", rows)
+                db.commit()
 
         submit_spent = time.time() - submit_start_time
         if config['SUBMIT_PERIOD'] > submit_spent:
             time.sleep(config['SUBMIT_PERIOD'] - submit_spent)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     run_loop()
