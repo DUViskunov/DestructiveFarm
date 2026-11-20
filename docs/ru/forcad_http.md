@@ -15,9 +15,12 @@ the team token without printing it:
 export FORCAD_URL='http://10.183.2.10'
 export FORCAD_TEAM_TOKEN="$(sed -n 's/^team_token=//p' ./team_data.txt | head -n 1)"
 export FARM_SERVER_PASSWORD='<choose a strong farm web password>'
-# Optional: enables X-Token authentication for Farm Client API requests.
-export FARM_API_TOKEN='<choose a separate long random token>'
+export FARM_API_TOKEN="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
 ```
+
+Both `FARM_SERVER_PASSWORD` and `FARM_API_TOKEN` are required; the server
+refuses to start without them. Share the generated `FARM_API_TOKEN` only with
+the team's Farm Clients. It is separate from the ForcAD team token.
 
 You can override the full receiver endpoint with `FORCAD_FLAGS_URL`; it must
 point to the `/flags` route. Otherwise the config uses
@@ -64,9 +67,27 @@ and use only targets permitted for the active stage. During preparation,
 keep only NPC. Run the farm client from an allowed participant computer,
 not from the team vulnbox or external VPS/cloud resources.
 
-## Run the server
+## Start the farm server
 
-Install dependencies and start the farm server as described in
-`docs/ru/farm_server.md`. The web-interface password is the value of
-`FARM_SERVER_PASSWORD`. If `FARM_API_TOKEN` is set, pass that separate value
-to Farm Client using its `--token` option.
+From the repository root, in the same shell where the variables above are set:
+
+```sh
+cd server
+python3 -m pip install -r requirements.txt
+./start_server.sh
+```
+
+The web interface uses `FARM_SERVER_PASSWORD`.
+
+A Farm Client connects to the farm server using its URL and the separate farm
+API token:
+
+```sh
+python3 client/start_sploit.py ./your_sploit.py \
+  --server-url http://127.0.0.1:5000 \
+  --token "$FARM_API_TOKEN"
+```
+
+Use the real farm-server address instead of `127.0.0.1` on participant
+computers. Keep the Receiver team token only on the farm-server host; clients
+send flags to the farm server and do not need the ForcAD token.

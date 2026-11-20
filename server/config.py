@@ -4,6 +4,12 @@ import os
 FORCAD_URL = os.environ.get('FORCAD_URL', 'http://10.183.2.10').rstrip('/')
 FORCAD_TEAM_TOKEN = os.environ.get('FORCAD_TEAM_TOKEN', '')
 FARM_API_TOKEN = os.environ.get('FARM_API_TOKEN', '')
+FARM_SERVER_PASSWORD = os.environ.get('FARM_SERVER_PASSWORD', '')
+
+if not FARM_SERVER_PASSWORD:
+    raise RuntimeError('Set FARM_SERVER_PASSWORD before starting the farm server')
+if not FARM_API_TOKEN:
+    raise RuntimeError('Set FARM_API_TOKEN before starting the farm server')
 
 CONFIG = {
     # During the preparation stage, test only against the official NPC service.
@@ -29,13 +35,8 @@ CONFIG = {
     'SUBMIT_PERIOD': 1,
     'FLAG_LIFETIME': 5 * 60,
 
-    # Set FARM_SERVER_PASSWORD before exposing the web interface.
-    'SERVER_PASSWORD': os.environ.get(
-        'FARM_SERVER_PASSWORD',
-        'change-me-before-use'
-    ),
-
-    # Setting FARM_API_TOKEN locally automatically enables client API auth.
-    'ENABLE_API_AUTH': bool(FARM_API_TOKEN),
+    # Required local secrets; never commit their values.
+    'SERVER_PASSWORD': FARM_SERVER_PASSWORD,
+    'ENABLE_API_AUTH': True,
     'API_TOKEN': FARM_API_TOKEN,
 }
