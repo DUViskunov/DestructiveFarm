@@ -6,6 +6,8 @@ FORCAD_TEAM_TOKEN = os.environ.get('FORCAD_TEAM_TOKEN', '')
 FARM_API_TOKEN = os.environ.get('FARM_API_TOKEN', '')
 FARM_SERVER_PASSWORD = os.environ.get('FARM_SERVER_PASSWORD', '')
 
+if not FORCAD_TEAM_TOKEN:
+    raise RuntimeError('Set FORCAD_TEAM_TOKEN before starting the farm server')
 if not FARM_SERVER_PASSWORD:
     raise RuntimeError('Set FARM_SERVER_PASSWORD before starting the farm server')
 if not FARM_API_TOKEN:

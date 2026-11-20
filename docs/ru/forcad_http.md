@@ -8,8 +8,8 @@ This fork uses the ForcAD API described in the organizer-provided `ch-api.md`.
 Set these in the shell where the farm server is started. Do not put tokens or
 passwords into `server/config.py`, a commit, an issue, or a pull request.
 
-If the organizer-provided `team_data.txt` is in the current directory, load
-the team token without printing it:
+From the repository root, load the team token without printing it (the
+organizer-provided `team_data.txt` must be in the current directory):
 
 ```sh
 export FORCAD_URL='http://10.183.2.10'
@@ -18,9 +18,9 @@ export FARM_SERVER_PASSWORD='<choose a strong farm web password>'
 export FARM_API_TOKEN="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
 ```
 
-Both `FARM_SERVER_PASSWORD` and `FARM_API_TOKEN` are required; the server
-refuses to start without them. Share the generated `FARM_API_TOKEN` only with
-the team's Farm Clients. It is separate from the ForcAD team token.
+All three secrets are required; the server refuses to start if any is absent.
+Share the generated `FARM_API_TOKEN` only with the team's Farm Clients. It is
+separate from the ForcAD team token.
 
 You can override the full receiver endpoint with `FORCAD_FLAGS_URL`; it must
 point to the `/flags` route. Otherwise the config uses
@@ -69,7 +69,8 @@ not from the team vulnbox or external VPS/cloud resources.
 
 ## Start the farm server
 
-From the repository root, in the same shell where the variables above are set:
+Keep the environment variables exported in the terminal session. In Terminal
+1, from the repository root:
 
 ```sh
 cd server
@@ -79,8 +80,7 @@ python3 -m pip install -r requirements.txt
 
 The web interface uses `FARM_SERVER_PASSWORD`.
 
-A Farm Client connects to the farm server using its URL and the separate farm
-API token:
+In Terminal 2, also from the repository root, run a Farm Client:
 
 ```sh
 python3 client/start_sploit.py ./your_sploit.py \
